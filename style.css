@@ -1,0 +1,22 @@
+table, td, th {    
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+table, form {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    padding: 15px;
+}
+
+header {
+    float: left;
+    width: 100%;
+}
+
+h1, img {
+    float: left;
+}
