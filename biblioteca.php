@@ -12,6 +12,7 @@ if (!$mysqli) {
 $mysqli->set_charset("utf8");
 
 $ordre = "";
+$cerca = "";
 
 if (isset($_POST['boto'])) {
 
@@ -22,55 +23,77 @@ if (isset($_POST['boto'])) {
         $ordre = $_POST['ordre'];
         switch ($ordre) {
             case 'codi':
-                $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT asc";
+                $ordena = "ID_AUT asc";
                 break;
             case 'codiDesc':
-                $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT desc";
+                $ordena = "ID_AUT desc";
                 break;
             case 'nom':
-                $query = "select NOM_AUT, ID_AUT from AUTORS order by NOM_AUT asc";
+                $ordena = "NOM_AUT asc";
                 break;
             case 'nomDesc':
-                $query = "select NOM_AUT, ID_AUT from AUTORS order by NOM_AUT desc";
+                $ordena = "NOM_AUT desc";
                 break;
             default:
-                $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT asc";
+                $ordena = "ID_AUT asc";
                 break;
         }
     }
 } else {
-    $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT asc";
+    $ordena = "ID_AUT asc";
 }
 
-//Encontrar una coincidencia con el buscador
-if (isset($_POST['consulta'])) {
-    if (isset($_POST['cerca'])) {
-        $cerca = trim($_POST['cerca']);
-
-        $queryCerca = "select * from AUTORS where NOM_AUT like '%" . $cerca . "%' or ID_AUT like '%" . $cerca . "%'";
-
-        $registres = "select count(*) from AUTORS where NOM_AUT like '%" . $cerca . "%' or ID_AUT like '%" . $cerca . "%'";
-        $cursor = $mysqli->query($registres) or die($registres);
-        
-        if ($registres > 0) {
-            //Nombre de resultats trobats
-            echo "<p>Hi ha " . $registres . " registres </p>";
-
-            
-        } else {
-            echo "No hi ha resultats a la BBDD";
-        }
-    }
-}
-
-$cursor = $mysqli->query($query) or die($query);
-
-//Capçelera, select i cercar
+//Capçalera, select i cercar
 
 echo "<header>";
 echo "<img src='img/paucasesnoves.jpg' alt='Pau Casesnoves' width='150' height='120'>";
 echo "<h1>Pau CasesNoves</h1>";
 echo "</header>";
+
+echo "<form action='biblioteca.php' method='post'>";
+echo "<select name='ordre'>";
+echo "<option value=''>Elegeix l'ordre</option>";
+echo "<option value='codi'" . ($ordena == "ID_AUT asc" ? "selected" : "") . ">Segons el codi ascendent</option>";
+echo "<option value='codiDesc'" . ($ordena == "ID_AUT desc" ? "selected" : "") . ">Segons el codi descendent</option>";
+echo "<option value='nom'" . ($ordena == "NOM_AUT asc" ? "selected" : "") . ">Segons el nom ascendent</option>";
+echo "<option value='nomDesc'" . ($ordena == "NOM_AUT desc" ? "selected" : "") . ">Segons el nom descendent</option>";
+echo "</select>";
+echo "<input type='submit' name='boto' value='Enviar'>";
+echo "<input type='text' name='cerca' value='$cerca'>";
+echo "<input type='submit' name='consulta' value='Consultar'>";
+echo "</form>";
+
+echo "<br/><br/>";
+echo "<table>";
+echo "<tr>";
+echo "<th>Codi</th>";
+echo "<th>Nom</th>";
+echo "</tr>";
+
+//Encontrar una coincidencia con el buscador
+
+if (isset($_POST['consulta'])) {
+    if (isset($_POST['cerca'])) {
+        $cerca = trim($_POST['cerca']);
+    } else {
+        echo "No hi ha resultats a la BBDD";
+    }
+} else {
+    $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT asc";
+}
+
+$query = "select * from AUTORS where NOM_AUT like '%" . $cerca . "%' or ID_AUT like '%" . $cerca . "%' order by $ordena";
+$cursor = $mysqli->query($query) or die($query);
+
+
+while ($row = $cursor->fetch_assoc()) {
+    echo "<tr>";
+    echo "<td>" . $row['ID_AUT'] . "</td>";
+    echo "<td>" . $row['NOM_AUT'] . "</td>";
+    echo "</tr>";
+}
+
+echo "</table>";
 ?>
 
 <!DOCTYPE html>
@@ -81,36 +104,9 @@ echo "</header>";
         <link rel="stylesheet" type="text/css" href="style.css">  
     </head>
     <body>
-        <form action="biblioteca.php" method="post">
-            <select name="ordre">
-                <option value="">Elegeix l'ordre</option>
-                <option value="codi" <?php echo($ordre == "codi" ? "selected" : ""); ?>>Segons el codi ascendent</option>
-                <option value="codiDesc" <?php echo($ordre == "codiDesc" ? "selected" : ""); ?>>Segons el codi descendent</option>
-                <option value="nom" <?php echo($ordre == "nom" ? "selected" : ""); ?>>Segons el nom ascendent</option>
-                <option value="nomDesc" <?php echo($ordre == "nomDesc" ? "selected" : ""); ?>>Segons el nom descendent</option>
-            </select>
-            <input type="submit" name="boto" value="Enviar">
-            <input type="text" name="cerca">
-            <input type="submit" name="consulta" value="Consultar">
+        <form action="" method="post" id="hidden" enctype="multipart/form-data">		
+            <input type="hidden" name="cerca" value="<?= $cerca ?>">
+            <input type="hidden" name="ordre" value="<?= $ordre ?>">  
         </form>
     </body>
 </html>
-
-
-<?php
-echo "<br/><br/>";
-echo "<table>";
-echo "<tr>";
-echo "<th>Codi</th>";
-echo "<th>Nom</th>";
-echo "</tr>";
-while ($row = $cursor->fetch_assoc()) {
-    echo "<tr>";
-    echo "<td>" . $row['ID_AUT'] . "</td>";
-    echo "<td>" . $row['NOM_AUT'] . "</td>";
-    echo "</tr>";
-}
-
-echo "</table>";
-?>
-    
