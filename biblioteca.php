@@ -1,4 +1,3 @@
-
 <?php
 //Establir connexio
 $host = "127.0.0.1";
@@ -6,6 +5,7 @@ $user = "root";
 $pass = "";
 $bd = "biblioteca";
 $mysqli = new mysqli($host, $user, $pass, $bd);
+
 if (!$mysqli) {
     die("No hi ha connexio");
 }
@@ -13,12 +13,8 @@ $mysqli->set_charset("utf8");
 
 $ordre = "";
 $cerca = "";
-
 if (isset($_POST['boto'])) {
-
 //Ordenar la tabla segun las preferencias
-
-
     if (isset($_POST['ordre'])) {
         $ordre = $_POST['ordre'];
         switch ($ordre) {
@@ -43,13 +39,20 @@ if (isset($_POST['boto'])) {
     $ordena = "ID_AUT asc";
 }
 
+
 //Capçalera, select i cercar
 
+echo "<html>";
+echo "<meta charset='UTF-8'>";
+echo "<title>Biblioteca</title>";
+echo "<link rel='stylesheet' type='text/css' href='style.css'>";
+echo "</head>";
+
+echo "<body>";
 echo "<header>";
 echo "<img src='img/paucasesnoves.jpg' alt='Pau Casesnoves' width='150' height='120'>";
 echo "<h1>Pau CasesNoves</h1>";
 echo "</header>";
-
 echo "<form action='biblioteca.php' method='post'>";
 echo "<select name='ordre'>";
 echo "<option value=''>Elegeix l'ordre</option>";
@@ -62,7 +65,6 @@ echo "<input type='submit' name='boto' value='Enviar'>";
 echo "<input type='text' name='cerca' value='$cerca'>";
 echo "<input type='submit' name='consulta' value='Consultar'>";
 echo "</form>";
-
 echo "<br/><br/>";
 echo "<table>";
 echo "<tr>";
@@ -71,21 +73,62 @@ echo "<th>Nom</th>";
 echo "</tr>";
 
 //Encontrar una coincidencia con el buscador
-
 if (isset($_POST['consulta'])) {
     if (isset($_POST['cerca'])) {
         $cerca = trim($_POST['cerca']);
     } else {
         echo "No hi ha resultats a la BBDD";
     }
-} else {
-    $query = "select NOM_AUT, ID_AUT from AUTORS order by ID_AUT asc";
 }
 
-$query = "select * from AUTORS where NOM_AUT like '%" . $cerca . "%' or ID_AUT like '%" . $cerca . "%' order by $ordena";
-$cursor = $mysqli->query($query) or die($query);
 
+//Total de pagines
 
+$consulta_autors = "select count(*) from AUTORS where NOM_AUT like '%$cerca%' or ID_AUT like '%$cerca%' order by $ordena";
+$rs_autors = mysqli_query($mysqli, $consulta_autors);
+$registres = mysqli_num_rows($rs_autors);
+
+//Autors per pagina
+$autors_pag = 10;
+
+?>
+<form method="post">
+<input type="submit" name='primer' value="<<">
+<input type="submit" name='anterior' value="<">
+<input type="submit" name='seguent' value=">">
+<input type="submit" name='darrer' value=">>">
+<input type='hidden' name='pagina' value=' <?php $pagina ?>'>
+</form>
+<?php
+
+//Agafam el valor de pagina
+
+$pagina = isset($_POST['pagina']) ? $_POST['pagina'] : "";
+
+if (!$pagina) {
+    $inici = 0;
+    $pagina = 1;
+} else {
+    $inici = ($pagina - 1) * $autors_pag;
+}
+
+//Calcul de les pagines totals
+$total_pagines = ceil($registres / $autors_pag);
+
+//Botons
+
+if (isset($_POST['seguent'])) {
+    if ($pagina < $total_pagines) {
+        $pagina++;
+    }
+}
+
+//Executam la consulta
+
+$consulta = "select ID_AUT,NOM_AUT from AUTORS where ID_AUT like '%$cerca%' or NOM_AUT like '%$cerca%' order by $ordena limit $inici, $autors_pag";
+$cursor = $mysqli->query($consulta) or die($consulta);
+
+print_r($consulta);
 while ($row = $cursor->fetch_assoc()) {
     echo "<tr>";
     echo "<td>" . $row['ID_AUT'] . "</td>";
@@ -96,17 +139,8 @@ while ($row = $cursor->fetch_assoc()) {
 echo "</table>";
 ?>
 
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Biblioteca</title>
-        <link rel="stylesheet" type="text/css" href="style.css">  
-    </head>
-    <body>
-        <form action="" method="post" id="hidden" enctype="multipart/form-data">		
-            <input type="hidden" name="cerca" value="<?= $cerca ?>">
-            <input type="hidden" name="ordre" value="<?= $ordre ?>">  
-        </form>
-    </body>
+</body>
 </html>
+
+
+
