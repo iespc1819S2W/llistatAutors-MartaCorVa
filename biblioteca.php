@@ -39,6 +39,19 @@ if (isset($_POST['boto'])) {
     $ordena = "ID_AUT asc";
 }
 
+//Encontrar una coincidencia con el buscador
+
+if (isset($_POST['cerca'])) {
+    $cerca = $_POST['cerca'];
+}
+
+if (isset($_POST['consulta'])) {
+    if (isset($_POST['cerca'])) {
+        $cerca = trim($_POST['cerca']);
+    } else {
+        echo "No hi ha resultats a la BBDD";
+    }
+}
 
 //Capçalera, select i cercar
 
@@ -65,57 +78,31 @@ echo "<input type='submit' name='boto' value='Enviar'>";
 echo "<input type='text' name='cerca' value='$cerca'>";
 echo "<input type='submit' name='consulta' value='Consultar'>";
 echo "</form>";
-echo "<br/><br/>";
-echo "<table>";
-echo "<tr>";
-echo "<th>Codi</th>";
-echo "<th>Nom</th>";
-echo "</tr>";
-
-//Encontrar una coincidencia con el buscador
-if (isset($_POST['consulta'])) {
-    if (isset($_POST['cerca'])) {
-        $cerca = trim($_POST['cerca']);
-    } else {
-        echo "No hi ha resultats a la BBDD";
-    }
-}
-
 
 //Total de pagines
 
-$consulta_autors = "select count(*) from AUTORS where NOM_AUT like '%$cerca%' or ID_AUT like '%$cerca%' order by $ordena";
-$rs_autors = mysqli_query($mysqli, $consulta_autors);
-$registres = mysqli_num_rows($rs_autors);
+$consulta_autors = "select count(*) as total from AUTORS where NOM_AUT like '%$cerca%' or ID_AUT like '%$cerca%' order by $ordena";
+$rs_autors = $mysqli->query($consulta_autors) or die($consulta_autors);
+if ($row = $rs_autors->fetch_assoc()) {
+    $registres = $row['total'];
+}
 
 //Autors per pagina
 $autors_pag = 10;
 
-?>
-<form method="post">
-<input type="submit" name='primer' value="<<">
-<input type="submit" name='anterior' value="<">
-<input type="submit" name='seguent' value=">">
-<input type="submit" name='darrer' value=">>">
-<input type='hidden' name='pagina' value=' <?php $pagina ?>'>
-</form>
-<?php
 
 //Agafam el valor de pagina
 
-$pagina = isset($_POST['pagina']) ? $_POST['pagina'] : "";
-
-if (!$pagina) {
-    $inici = 0;
-    $pagina = 1;
-} else {
-    $inici = ($pagina - 1) * $autors_pag;
-}
+$pagina = 1;
 
 //Calcul de les pagines totals
 $total_pagines = ceil($registres / $autors_pag);
 
 //Botons
+
+if (isset($_POST['pagina'])) {
+    $pagina = $_POST['pagina'];
+}
 
 if (isset($_POST['seguent'])) {
     if ($pagina < $total_pagines) {
@@ -123,12 +110,44 @@ if (isset($_POST['seguent'])) {
     }
 }
 
+if (isset($_POST['anterior'])) {
+    if ($pagina > 1) {
+        $pagina--;
+    }
+}
+
+if (isset($_POST['primer'])) {
+    $pagina = 1;
+}
+
+if (isset($_POST['darrer'])) {
+    $pagina = $total_pagines;
+}
+
+$inici = ($pagina - 1) * $autors_pag;
+
 //Executam la consulta
 
 $consulta = "select ID_AUT,NOM_AUT from AUTORS where ID_AUT like '%$cerca%' or NOM_AUT like '%$cerca%' order by $ordena limit $inici, $autors_pag";
 $cursor = $mysqli->query($consulta) or die($consulta);
+?>
 
-print_r($consulta);
+<form method="post">
+    <input type='hidden' name='pagina' value=' <?= $pagina ?>'>
+    <input type='hidden' name='cerca' value='<?= $cerca ?>'>
+    <input type="submit" name='primer' value="<<">
+    <input type="submit" name='anterior' value="<">
+    <input type="submit" name='seguent' value=">">
+    <input type="submit" name='darrer' value=">>">
+</form>
+
+<?php
+echo "<table>";
+echo "<tr>";
+echo "<th>Codi</th>";
+echo "<th>Nom</th>";
+echo "</tr>";
+
 while ($row = $cursor->fetch_assoc()) {
     echo "<tr>";
     echo "<td>" . $row['ID_AUT'] . "</td>";
@@ -137,6 +156,8 @@ while ($row = $cursor->fetch_assoc()) {
 }
 
 echo "</table>";
+
+echo $pagina . "/" . $total_pagines;
 ?>
 
 </body>
