@@ -137,14 +137,29 @@ if (isset($_POST['afegir']) && $_POST['afegir'] != "") {
 }
 
 $delete = "";
-if (isset($_POST['delete'])) {    
+if (isset($_POST['delete'])) {
     $delete = $mysqli->real_escape_string($_POST['delete']);
     $sql = "delete from AUTORS where ID_AUT = $delete";
-    $delete_autor = $mysqli->query($sql) or die($sql);    
+    $delete_autor = $mysqli->query($sql) or die($sql);
+}
+
+//Modificar
+$modifica = "";
+$id_autor = "";
+$edita = "";
+
+if (isset($_POST['editar'])) {
+    $edita = $_POST['editar'];
+}
+
+if (isset($_POST['guarda_user'])) {
+    $modifica = $mysqli->real_escape_string($_POST['modifica']);
+    $id_autor = $mysqli->real_escape_string($_POST['guarda_user']);
+    $sql = "update AUTORS set NOM_AUT = '$modifica' where ID_AUT = $id_autor";
+    $modifica_user = $mysqli->query($sql) or die($sql);
 }
 
 //Executam la consulta
-
 $consulta = "select ID_AUT,NOM_AUT from AUTORS where ID_AUT like '%$cerca%' or NOM_AUT like '%$cerca%' order by $ordena limit $inici, $autors_pag";
 $cursor = $mysqli->query($consulta) or die($consulta);
 ?>
@@ -167,10 +182,25 @@ echo "</tr>";
 
 while ($row = $cursor->fetch_assoc()) {
     echo "<tr>";
+    //Editar
     echo "<td>" . $row['ID_AUT'] . "</td>";
-    echo "<td>" . $row['NOM_AUT'] . "</td>";
+    if ($edita == $row['ID_AUT']) {
+        echo "<td>";
+        echo "  ";
+        echo "<input type='text' form='segon' name='modifica' value='{$row['NOM_AUT']}'>";
+        echo "  ";
+        echo "<button type='submit' form='segon' name='guarda_user' value='{$row['ID_AUT']}'>Guardar</button>";
+        echo "  ";
+        echo "<button type='submit' form='segon' name='cancelar'>Cancelar</button>";
+        echo "</td>";
+    } else {
+        echo "<td>" . $row['NOM_AUT'] . "</td>";
+    }
+
     echo "<td>";
-    echo "<input type='submit' form='segon' name='delete' value='" . $row['ID_AUT'] . "'>";
+    echo "<button type='submit' form='segon' name='delete' value='{$row['ID_AUT']}'>Eliminar</button>";
+    echo "  ";
+    echo "<button type='submit' form='segon' name='editar' value='{$row['ID_AUT']}'>Editar</button>";
     echo "</td>";
     echo "</tr>";
 }
