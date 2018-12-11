@@ -1,15 +1,8 @@
 <?php
-//Establir connexio
-$host = "127.0.0.1";
-$user = "root";
-$pass = "";
-$bd = "biblioteca";
-$mysqli = new mysqli($host, $user, $pass, $bd);
+require_once 'funcions.php';
 
-if (!$mysqli) {
-    die("No hi ha connexio");
-}
-$mysqli->set_charset("utf8");
+//Establir connexio
+$mysqli = conectar();
 
 $ordre = "";
 $cerca = "";
@@ -150,17 +143,24 @@ $edita = "";
 
 if (isset($_POST['editar'])) {
     $edita = $_POST['editar'];
+    $sql = "select fk_nacionalitat from AUTORS where id_aut = $edita";
+    $cursor = $mysqli->query($sql) or die($sql);
+    if ($row = $cursor->fetch_assoc()) {
+        $fk_nacionalitat = $row["fk_nacionalitat"];
+    }
 }
 
+$fk_nacionalitat = "";
 if (isset($_POST['guarda_user'])) {
+    $fk_nacionalitat = $_POST["fk_nacionalitat"] != '' ? "'" . $mysqli->real_escape_string($_POST["fk_nacionalitat"]) . "'" : "NULL";
     $modifica = $mysqli->real_escape_string($_POST['modifica']);
     $id_autor = $mysqli->real_escape_string($_POST['guarda_user']);
-    $sql = "update AUTORS set NOM_AUT = '$modifica' where ID_AUT = $id_autor";
+    $sql = "update AUTORS set NOM_AUT = '$modifica',fk_nacionalitat = $fk_nacionalitat where ID_AUT = $id_autor";
     $modifica_user = $mysqli->query($sql) or die($sql);
 }
 
 //Executam la consulta
-$consulta = "select ID_AUT,NOM_AUT from AUTORS where ID_AUT like '%$cerca%' or NOM_AUT like '%$cerca%' order by $ordena limit $inici, $autors_pag";
+$consulta = "select ID_AUT,NOM_AUT, fk_nacionalitat from AUTORS where ID_AUT like '%$cerca%' or NOM_AUT like '%$cerca%' order by $ordena limit $inici, $autors_pag";
 $cursor = $mysqli->query($consulta) or die($consulta);
 ?>
 
@@ -178,6 +178,8 @@ echo "<table>";
 echo "<tr>";
 echo "<th>Codi</th>";
 echo "<th>Nom</th>";
+echo "<th>Nacionalitat</th>";
+echo "<th>Botons</th>";
 echo "</tr>";
 
 while ($row = $cursor->fetch_assoc()) {
@@ -189,6 +191,9 @@ while ($row = $cursor->fetch_assoc()) {
         echo "  ";
         echo "<input type='text' form='segon' name='modifica' value='{$row['NOM_AUT']}'>";
         echo "  ";
+        $sql = "select nacionalitat from NACIONALITATS order by nacionalitat";
+        generaSelect($mysqli, $sql, "fk_nacionalitat", "nacionalitat", "nacionalitat", $fk_nacionalitat);
+        echo "  ";
         echo "<button type='submit' form='segon' name='guarda_user' value='{$row['ID_AUT']}'>Guardar</button>";
         echo "  ";
         echo "<button type='submit' form='segon' name='cancelar'>Cancelar</button>";
@@ -197,6 +202,7 @@ while ($row = $cursor->fetch_assoc()) {
         echo "<td>" . $row['NOM_AUT'] . "</td>";
     }
 
+    echo "<td>" . $row['fk_nacionalitat'] . "</td>";
     echo "<td>";
     echo "<button type='submit' form='segon' name='delete' value='{$row['ID_AUT']}'>Eliminar</button>";
     echo "  ";
